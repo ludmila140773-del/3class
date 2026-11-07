@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Больница для слов</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #E0F7FA;
+  --card: #FFFFFF;
+  --border: 3px solid;
+  --shadow: 0 6px 0 rgba(0,0,0,0.08), 0 10px 20px rgba(0,0,0,0.05);
+  --c1: #FF9AA2; --c2: #FFB7B2; --c3: #FFDAC1; --c4: #E2F0CB;
+  --c5: #B5EAD7; --c6: #C7CEEA; --c7: #F8B195; --c8: #A0E8AF;
+  --text: #2D3436;
+  --radius: 20px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  user-select: none;
+}
+
+header {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.progress {
+  display: flex;
+  gap: 10px;
+}
+
+.heart {
+  width: 40px; height: 40px;
+  background: #DDD;
+  clip-path: path('M20 35 C20 35 5 25 5 15 C5 8 10 5 15 5 C18 5 20 8 20 10 C20 8 22 5 25 5 C30 5 35 8 35 15 C35 25 20 35 20 35 Z');
+  transition: background 0.3s, transform 0.3s;
+}
+.heart.active { background: #FF6B6B; transform: scale(1.1); }
+
+main {
+  width: 100%;
+  max-width: 900px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen { display: none; flex-direction: column; align-items: center; width: 100%; }
+.screen.active { display: flex; animation: fadeIn 0.4s ease; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+h2 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  text-align: center;
+  background: var(--card);
+  padding: 10px 25px;
+  border-radius: 30px;
+  border: var(--border) var(--c5);
+  box-shadow: var(--shadow);
+}
+
+/* --- SCREEN 1 --- */
+.patients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.patient-card {
+  background: var(--card);
+  border: var(--border) var(--c1);
+  border-radius: var(--radius);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  position: relative;
+  animation: sway 3s ease-in-out infinite;
+  transition: transform 0.2s, background 0.3s;
+}
+.patient-card:nth-child(even) { animation-delay: -1.5s; border-color: var(--c5); }
+.patient-card:nth-child(3n) { border-color: var(--c6); }
+.patient-card:nth-child(4n) { border-color: var(--c3); }
+
+.patient-card:hover { transform: scale(1.05); }
+.patient-card.solved {
+  background: #FFE8E8;
+  border-color: #FF6B6B;
+  animation: none;
+  cursor: default;
+}
+.patient-card.solved .face { display: none; }
+.patient-card.solved::after {
+  content: '✓';
+  font-size: 50px;
+  color: #2ECC71;
+  font-weight: 800;
+}
+
+.patient-word {
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 10px;
+  z-index: 2;
+}
+
+.face {
+  width: 60px; height: 60px;
+}
+
+.counter {
+  font-size: 24px;
+  font-weight: 800;
+  background: var(--card);
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: var(--border) var(--c4);
+  box-shadow: var(--shadow);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--card);
+  border: var(--border) var(--c2);
+  border-radius: var(--radius);
+  padding: 30px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.modal.shake { animation: shake 0.4s ease; }
+
+@keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+.modal h3 { font-size: 26px; margin-bottom: 20px; }
+.modal-word { font-size: 32px; font-weight: 800; color: #FF6B6B; margin-bottom: 20px; display: block;}
+
+.diag-btn {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  border: var(--border) var(--c6);
+  border-radius: 15px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.2s;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+}
+.diag-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.1); }
+.diag-btn.correct { background: #A0E8AF; border-color: #2ECC71; }
+
+/* --- SCREEN 2 --- */
+.treatment-area {
+  display: flex;
+  gap: 30px;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.meds-col, .patients-col {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.med-item, .patient-target {
+  background: var(--card);
+  border: var(--border) var(--c3);
+  border-radius: 15px;
+  padding: 15px;
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow);
+  min-height: 60px;
+}
+
+.med-item {
+  cursor: grab;
+  border-color: var(--c5);
+  background: #F0FFF4;
+  touch-action: none;
+}
+.med-item:active { cursor: grabbing; }
+.med-item.dragging { opacity: 0.8; z-index: 1000; position: fixed; pointer-events: none; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+.med-item.wrong { animation: bounceBack 0.4s ease; }
+
+@keyframes bounceBack { 0% { transform: scale(1); } 50% { transform: scale(1.1) translateY(-10px); } 100% { transform: scale(1); } }
+
+.patient-target {
+  border-color: var(--c1);
+  justify-content: center;
+  position: relative;
+}
+.patient-target.drop-hover { background: #FFF3E0; border-color: #FF9800; transform: scale(1.02); }
+.patient-target.solved {
+  background: #E8F5E9;
+  border-color: #4CAF50;
+  animation: none;
+}
+.patient-target.solved::after {
+  content: 'Выписан! 🎉';
+  position: absolute;
+  font-size: 20px;
+  color: #2ECC71;
+}
+.patient-target.solved .target-word { display: none; }
+
+/* --- SCREEN 3 --- */
+.text-block {
+  background: var(--card);
+  border: var(--border) var(--c6);
+  border-radius: var(--radius);
+  padding: 25px;
+  font-size: 22px;
+  line-height: 2.2;
+  box-shadow: var(--shadow);
+  width: 100%;
+  margin-bottom: 30px;
+  text-align: justify;
+}
+
+.blank {
+  display: inline-block;
+  min-width: 120px;
+  min-height: 40px;
+  border-bottom: 3px dashed #B5EAD7;
+  text-align: center;
+  font-weight: 800;
+  color: #2ECC71;
+  vertical-align: bottom;
+  margin: 0 5px;
+  transition: background 0.2s;
+}
+.blank.filled { border-bottom-style: solid; border-bottom-color: #2ECC71; }
+.blank.drop-hover { background: #E8F5E9; }
+
+.word-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+  width: 100%;
+}
+
+.bank-word {
+  background: var(--card);
+  border: var(--border) var(--c4);
+  border-radius: 15px;
+  padding: 12px 20px;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: grab;
+  box-shadow: var(--shadow);
+  touch-action: none;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.bank-word:active { cursor: grabbing; }
+.bank-word.dragging { opacity: 0.8; z-index: 1000; position: fixed; pointer-events: none; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+.bank-word.used { opacity: 0.3; pointer-events: none; }
+
+/* --- FINAL SCREEN --- */
+.final-screen {
+  text-align: center;
+  padding: 40px 20px;
+}
+.final-screen h2 {
+  font-size: 36px;
+  color: #2ECC71;
+  border-color: #2ECC71;
+  margin-bottom: 30px;
+}
+.final-screen p {
+  font-size: 24px;
+  margin-bottom: 30px;
+}
+.btn-play-again {
+  font-size: 24px;
+  font-weight: 800;
+  font-family: 'Nunito', sans-serif;
+  padding: 20px 40px;
+  background: #FF6B6B;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #D63031;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.btn-play-again:active { transform: translateY(4px); box-shadow: 0 2px 0 #D63031; }
+
+/* Confetti */
+.confetti-container {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 999;
+  overflow: hidden;
+}
+.confetti {
+  position: absolute;
+  width: 10px; height: 10px;
+  top: -20px;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Animations */
+@keyframes sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+@media (max-width: 600px) {
+  .patients-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
+  .patient-card { min-height: 120px; padding: 10px; }
+  .patient-word { font-size: 18px; }
+  .treatment-area { flex-direction: column; align-items: center; }
+  .meds-col, .patients-col { width: 100%; }
+  h2 { font-size: 22px; }
+  .text-block { font-size: 18px; line-height: 2; padding: 15px; }
+  .blank { min-width: 90px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="progress">
+    <div class="heart" id="h1"></div>
+    <div class="heart" id="h2"></div>
+    <div class="heart" id="h3"></div>
+  </div>
+</header>
+
+<main>
+  <!-- SCREEN 1 -->
+  <section id="screen1" class="screen active">
+    <h2>🏥 Приёмное отделение</h2>
+    <div class="patients-grid" id="patientsGrid"></div>
+    <div class="counter">Вылечено: <span id="counter1">0</span>/8</div>
+  </section>
+
+  <!-- SCREEN 2 -->
+  <section id="screen2" class="screen">
+    <h2>💊 Назначь лечение</h2>
+    <div class="treatment-area">
+      <div class="meds-col" id="medsCol"></div>
+      <div class="patients-col" id="patientsCol"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3 -->
+  <section id="screen3" class="screen">
+    <h2>📝 Выписка</h2>
+    <div class="text-block" id="textBlock"></div>
+    <div class="word-bank" id="wordBank"></div>
+  </section>
+
+  <!-- FINAL -->
+  <section id="screenFinal" class="screen final-screen">
+    <h2>🎉 Все здоровы!</h2>
+    <p>Ты настоящий доктор слов!<br>Все пациенты выписаны домой.</p>
+    <button class="btn-play-again" id="btnRestart">Играть снова 🔄</button>
+  </section>
+</main>
+
+<!-- Modal for Screen 1 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <h3>Поставь диагноз:</h3>
+    <span class="modal-word" id="modalWord"></span>
+    <div id="diagBtns"></div>
+  </div>
+</div>
+
+<div class="confetti-container" id="confettiContainer"></div>
+
+<script>
+// --- AUDIO ---
+let audioCtx = null;
+const soundOn = true;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playSound(type) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  if (type === 'correct') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(659, audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+  } else if (type === 'wrong') {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+  } else if (type === 'win') {
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.1, audioCtx.currentTime + i * 0.15);
+      g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.15 + 0.3);
+      o.start(audioCtx.currentTime + i * 0.15);
+      o.stop(audioCtx.currentTime + i * 0.15 + 0.3);
+    });
+  }
+}
+
+// --- STATE ---
+let currentScreen = 1;
+let solved1 = 0, solved2 = 0, solved3 = 0;
+
+function updateProgress() {
+  document.getElementById('h1').classList.toggle('active', solved1 > 0);
+  document.getElementById('h2').classList.toggle('active', solved2 > 0);
+  document.getElementById('h3').classList.toggle('active', solved3 > 0);
+}
+
+function showScreen(num) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen${num}`).classList.add('active');
+  currentScreen = num;
+}
+
+// --- SVG FACE ---
+function getFaceSVG(mood = 'normal') {
+  let mouth = 'M 30 65 Q 50 85 70 65'; // smile
+  let extra = '';
+  if (mood === 'sad') mouth = 'M 30 75 Q 50 55 70 75';
+  if (mood === 'blush') extra = '<circle cx="25" cy="60" r="8" fill="#FFB7B2" opacity="0.6"/><circle cx="75" cy="60" r="8" fill="#FFB7B2" opacity="0.6"/>';
+  
+  return `<svg class="face" viewBox="0 0 100 100">
+    <circle cx="35" cy="40" r="6" fill="#333"/>
+    <circle cx="65" cy="40" r="6" fill="#333"/>
+    <path d="${mouth}" stroke="#333" stroke-width="5" fill="none" stroke-linecap="round"/>
+    ${extra}
+  </svg>`;
+}
+
+// --- SCREEN 1 ---
+const patients1Data = [
+  { word: 'грусно', diag: 'непроизносимая согласная' },
+  { word: 'паехали', diag: 'безударная гласная' },
+  { word: 'виселый', diag: 'безударная гласная' },
+  { word: 'сабака', diag: 'словарное слово' },
+  { word: 'врачь', diag: 'Ь после шипящих' },
+  { word: 'купусный', diag: 'непроизносимая согласная' },
+  { word: 'смишной', diag: 'безударная гласная' },
+  { word: 'помощ', diag: 'Ь после шипящих' }
+];
+const diagnoses = ['безударная гласная', 'непроизносимая согласная', 'Ь после шипящих', 'словарное слово'];
+let currentPatient = null;
+
+function initScreen1() {
+  const grid = document.getElementById('patientsGrid');
+  grid.innerHTML = '';
+  solved1 = 0;
+  document.getElementById('counter1').textContent = '0';
+  
+  patients1Data.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'patient-card';
+    card.dataset.word = p.word;
+    card.dataset.diag = p.diag;
+    card.innerHTML = `${getFaceSVG()}<div class="patient-word">${p.word}</div>`;
+    card.addEventListener('click', () => openModal(card));
+    grid.appendChild(card);
+  });
+}
+
+function openModal(card) {
+  if (card.classList.contains('solved')) return;
+  initAudio();
+  currentPatient = card;
+  document.getElementById('modalWord').textContent = card.dataset.word;
+  const btnsContainer = document.getElementById('diagBtns');
+  btnsContainer.innerHTML = '';
+  
+  diagnoses.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'diag-btn';
+    btn.textContent = d;
+    btn.addEventListener('click', () => checkDiag(btn, d));
+    btnsContainer.appendChild(btn);
+  });
+  
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function checkDiag(btn, diag) {
+  if (diag === currentPatient.dataset.diag) {
+    btn.classList.add('correct');
+    playSound('correct');
+    currentPatient.classList.add('solved');
+    solved1++;
+    document.getElementById('counter1').textContent = solved1;
+    updateProgress();
+    setTimeout(() => {
+      document.getElementById('modalOverlay').classList.remove('active');
+      if (solved1 === 8) setTimeout(() => showScreen(2), 500);
+    }, 600);
+  } else {
+    playSound('wrong');
+    const modal = document.getElementById('modal');
+    modal.classList.remove('shake');
+    void modal.offsetWidth;
+    modal.classList.add('shake');
+  }
+}
+
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('active');
+  }
+});
+
+// --- SCREEN 2 ---
+const treatmentsData = [
+  { text: '💧 проверь словом грусть', target: 'грусно' },
+  { text: '💊 проверочное: капуста', target: 'купусный' },
+  { text: '💉 он мой, мужской род', target: 'врачь' },
+  { text: '🩺 моя, 3 склонение', target: 'помощ' },
+  { text: '🧠 запомнить!', target: 'сабака' },
+  { text: '💧 проверка: весело', target: 'виселый' },
+  { text: '💊 смех', target: 'смишной' },
+  { text: '🩺 приставка ПО-', target: 'паехали' }
+];
+
+function initScreen2() {
+  const medsCol = document.getElementById('medsCol');
+  const patientsCol = document.getElementById('patientsCol');
+  medsCol.innerHTML = '';
+  patientsCol.innerHTML = '';
+  solved2 = 0;
+
+  // Shuffle meds
+  const shuffledMeds = [...treatmentsData].sort(() => Math.random() - 0.5);
+
+  shuffledMeds.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'med-item draggable';
+    div.textContent = m.text;
+    div.dataset.target = m.target;
+    medsCol.appendChild(div);
+  });
+
+  patients1Data.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'patient-target drop-target';
+    div.dataset.word = p.word;
+    div.innerHTML = `<span class="target-word">${p.word}</span>`;
+    patientsCol.appendChild(div);
+  });
+}
+
+// --- SCREEN 3 ---
+const textParts = [
+  'Мы ', { blank: 'поехали' }, ' в деревню. Там нам было очень ', { blank: 'весело' },
+  ' и ', { blank: 'смешно' }, '. ', { blank: 'собака' }, ' Жучка грызла ',
+  { blank: 'капустный' }, ' листок. Когда нам понадобилась ', { blank: 'помощь' },
+  ', нам помог ', { blank: 'врач' }, '. Но было немного ', { blank: 'грустно' },
+  ' уезжать домой.'
+];
+const bankWords = ['поехали', 'весело', 'смешно', 'собака', 'капустный', 'помощь', 'врач', 'грустно'];
+
+function initScreen3() {
+  const textBlock = document.getElementById('textBlock');
+  const wordBank = document.getElementById('wordBank');
+  textBlock.innerHTML = '';
+  wordBank.innerHTML = '';
+  solved3 = 0;
+
+  textParts.forEach(part => {
+    if (typeof part === 'string') {
+      textBlock.appendChild(document.createTextNode(part));
+    } else {
+      const span = document.createElement('span');
+      span.className = 'blank drop-target';
+      span.dataset.answer = part.blank;
+      textBlock.appendChild(span);
+    }
+  });
+
+  const shuffledBank = [...bankWords].sort(() => Math.random() - 0.5);
+  shuffledBank.forEach(w => {
+    const div = document.createElement('div');
+    div.className = 'bank-word draggable';
+    div.textContent = w;
+    div.dataset.word = w;
+    wordBank.appendChild(div);
+  });
+}
+
+// --- DRAG & DROP (Pointer Events for Mouse + Touch) ---
+let draggedEl = null;
+let dragOffsetX = 0, dragOffsetY = 0;
+let originalParent = null;
+let originalNextSibling = null;
+
+document.addEventListener('pointerdown', (e) => {
+  const target = e.target.closest('.draggable');
+  if (!target || target.classList.contains('used')) return;
+  
+  initAudio();
+  e.preventDefault();
+  draggedEl = target;
+  
+  const rect = draggedEl.getBoundingClientRect();
+  dragOffsetX = e.clientX - rect.left;
+  dragOffsetY = e.clientY - rect.top;
+  
+  originalParent = draggedEl.parentNode;
+  originalNextSibling = draggedEl.nextSibling;
+  
+  draggedEl.style.width = rect.width + 'px';
+  draggedEl.style.height = rect.height + 'px';
+  draggedEl.style.left = rect.left + 'px';
+  draggedEl.style.top = rect.top + 'px';
+  draggedEl.classList.add('dragging');
+  
+  draggedEl.setPointerCapture(e.pointerId);
+});
+
+document.addEventListener('pointermove', (e) => {
+  if (!draggedEl) return;
+  e.preventDefault();
+  draggedEl.style.left = (e.clientX - dragOffsetX) + 'px';
+  draggedEl.style.top = (e.clientY - dragOffsetY) + 'px';
+  
+  // Highlight drop targets
+  document.querySelectorAll('.drop-hover').forEach(el => el.classList.remove('drop-hover'));
+  const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+  const dropTarget = elemBelow ? elemBelow.closest('.drop-target') : null;
+  if (dropTarget && !dropTarget.classList.contains('solved') && !dropTarget.classList.contains('filled')) {
+    dropTarget.classList.add('drop-hover');
+  }
+});
+
+document.addEventListener('pointerup', (e) => {
+  if (!draggedEl) return;
+  e.preventDefault();
+  
+  document.querySelectorAll('.drop-hover').forEach(el => el.classList.remove('drop-hover'));
+  
+  const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+  const dropTarget = elemBelow ? elemBelow.closest('.drop-target') : null;
+  
+  let isCorrect = false;
+  
+  if (dropTarget && !dropTarget.classList.contains('solved') && !dropTarget.classList.contains('filled')) {
+    const targetWord = dropTarget.dataset.word || dropTarget.dataset.answer;
+    const draggedWord = draggedEl.dataset.target || draggedEl.dataset.word;
+    
+    if (targetWord.toLowerCase() === draggedWord.toLowerCase()) {
+      isCorrect = true;
+      playSound('correct');
+      
+      if (currentScreen === 2) {
+        dropTarget.classList.add('solved');
+        draggedEl.style.display = 'none'; // Hide medicine
+        solved2++;
+        updateProgress();
+        if (solved2 === 8) setTimeout(() => showScreen(3), 800);
+      } 
+      else if (currentScreen === 3) {
+        dropTarget.textContent = draggedEl.textContent;
+        dropTarget.classList.add('filled');
+        draggedEl.classList.add('used');
+        solved3++;
+        updateProgress();
+        if (solved3 === 8) setTimeout(() => showFinal(), 800);
+      }
+    }
+  }
+  
+  if (!isCorrect) {
+    if (draggedEl.classList.contains('med-item')) {
+      playSound('wrong');
+      draggedEl.classList.add('wrong');
+      setTimeout(() => draggedEl.classList.remove('wrong'), 400);
+    }
+    // Return to original position
+    draggedEl.style.position = '';
+    draggedEl.style.left = '';
+    draggedEl.style.top = '';
+    draggedEl.style.width = '';
+    draggedEl.style.height = '';
+    if (originalNextSibling) {
+      originalParent.insertBefore(draggedEl, originalNextSibling);
+    } else {
+      originalParent.appendChild(draggedEl);
+    }
+  } else {
+    // Clean up dragging styles if it was successfully dropped and hidden/used
+    if (currentScreen === 3) {
+       // keep it in bank but marked as used, reset position just in case
+       draggedEl.style.position = '';
+       draggedEl.style.left = '';
+       draggedEl.style.top = '';
+       draggedEl.style.width = '';
+       draggedEl.style.height = '';
+       if (originalNextSibling) {
+         originalParent.insertBefore(draggedEl, originalNextSibling);
+       } else {
+         originalParent.appendChild(draggedEl);
+       }
+    }
+  }
+  
+  draggedEl.classList.remove('dragging');
+  draggedEl = null;
+});
+
+// --- FINAL SCREEN ---
+function showFinal() {
+  playSound('win');
+  showScreen('Final');
+  launchConfetti();
+}
+
+function launchConfetti() {
+  const container = document.getElementById('confettiContainer');
+  container.innerHTML = '';
+  const colors = ['#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA', '#FF6B6B', '#2ECC71'];
+  
+  for (let i = 0; i < 80; i++) {
+    const conf = document.createElement('div');
+    conf.className = 'confetti';
+    conf.style.left = Math.random() * 100 + '%';
+    conf.style.background = colors[Math.floor(Math.random() * colors.length)];
+    conf.style.width = (Math.random() * 10 + 5) + 'px';
+    conf.style.height = (Math.random() * 10 + 5) + 'px';
+    conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+    conf.style.animationDuration = (Math.random() * 2 + 2) + 's';
+    conf.style.animationDelay = (Math.random() * 2) + 's';
+    container.appendChild(conf);
+  }
+  
+  setTimeout(() => container.innerHTML = '', 5000);
+}
+
+// --- RESTART ---
+document.getElementById('btnRestart').addEventListener('click', () => {
+  solved1 = 0; solved2 = 0; solved3 = 0;
+  updateProgress();
+  initScreen1();
+  initScreen2();
+  initScreen3();
+  showScreen(1);
+});
+
+// --- INIT ---
+initScreen1();
+initScreen2();
+initScreen3();
+updateProgress();
+</script>
+</body>
+</html>
